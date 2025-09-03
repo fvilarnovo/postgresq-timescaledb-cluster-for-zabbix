@@ -150,7 +150,8 @@ postgresql_password_encryption_algorithm: "scram-sha-256"  # or "md5" if your cl
 
 # (optional) list of users to be created (if not already exists)
 postgresql_users:
-  - { name: "{{ zabbix_username }}", password: "{{ zabbix_password }}", flags: "NOLOGIN" }
+  - { name: "{{ zabbix_username }}", password: "{{ zabbix_password }}", flags: "LOGIN" }
+
 #  - { name: "mydb-user", password: "mydb-user-pass", flags: "SUPERUSER" }
 #  - { name: "", password: "", flags: "NOSUPERUSER" }
 #  - { name: "", password: "", flags: "NOSUPERUSER" }
@@ -298,7 +299,7 @@ pgbouncer_log_dir: "/var/log/pgbouncer"
 pgbouncer_listen_port: 6432
 pgbouncer_max_client_conn: 10000
 pgbouncer_max_db_connections: 1000
-pgbouncer_default_pool_size: 20
+pgbouncer_default_pool_size: 200
 pgbouncer_default_pool_mode: "session"
 pgbouncer_admin_users: "postgres"  # comma-separated list of users, who are allowed to change settings
 pgbouncer_stats_users: "postgres"  # comma-separated list of users who are just allowed to use SHOW command
