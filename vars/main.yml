@@ -29,7 +29,8 @@ synchronous_node_count: 1  # number of synchronous standby databases
 
 # --- TimescaleDB Settings ---
 install_timescaledb: true
-timescaledb_package_name: "timescaledb-2-postgresql-{{ postgresql_version }}"
+timescaledb_version: "2.12.2"  # Versión compatible con Zabbix 7.0
+timescaledb_package_name: "timescaledb-2-postgresql-{{ postgresql_version }}-{{ timescaledb_version }}"
 
 # Load Balancing
 with_haproxy_load_balancing: false  # or 'true' if you want to install and configure the load-balancing
@@ -156,7 +157,8 @@ postgresql_users:
 #  - { name: "", password: "", flags: "NOLOGIN" }
 
 # (optional) list of databases to be created (if not already exists)
-postgresql_databases: []
+postgresql_databases:
+  - { db: "zabbix", owner: "zabbix", encoding: "UTF8", lc_collate: "en_US.UTF-8", lc_ctype: "en_US.UTF-8" }
 #  - { db: "mydatabase", encoding: "UTF8", lc_collate: "ru_RU.UTF-8", lc_ctype: "ru_RU.UTF-8", owner: "mydb-user" }
 #  - { db: "mydatabase2", encoding: "UTF8", lc_collate: "ru_RU.UTF-8", lc_ctype: "ru_RU.UTF-8", owner: "mydb-user", conn_limit: "50" }
 #  - { db: "", encoding: "UTF8", lc_collate: "en_US.UTF-8", lc_ctype: "en_US.UTF-8", owner: "" }
