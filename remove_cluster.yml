@@ -1,64 +1,89 @@
 ---
 
-- hosts: postgres_cluster
-  vars:
-    remove_postgres: false  # or 'true' to remove the database
-    remove_consul: false  # or 'true' to remove the consul data
+- hosts: all
   become: true
+  gather_facts: false
   vars_files:
     - vars/main.yml
-    - vars/{{ ansible_os_family }}.yml
   tasks:
-    - name: Stop Patroni service
+    - name: Stop all cluster services
       service:
-        name: patroni
+        name: "{{ item }}"
         state: stopped
         enabled: false
+      loop:
+        - patroni
+        - etcd
+        - consul
+        - haproxy
+        - pgbouncer
+        - keepalived
       ignore_errors: true
-      when: remove_postgres|bool
-    - name: Delete PostgreSQL database content
-      file:
-        path: "{{ postgresql_data_dir }}"
-        state: absent
-      when: remove_postgres|bool
-    - name: Delete PgBackRest repository
-      file:
-        # path: pgbackrest_conf global repo1-path
-        path: /var/lib/pgbackrest
-        state: absent
-      when: pgbackrest_install|bool
-    - name: Delete PgBackRest cron
-      file:
-        path: /etc/cron.d/pgbackrest
-        state: absent
-      when: pgbackrest_install|bool
-    - name: Stop Consul service
-      service:
-        name: consul
-        state: stopped
-        enabled: false
-    - name: Delete Consul content
-      file:
-        path: "{{ consul_data_path }}"
-        state: absent
-      when: remove_consul|bool
 
-- hosts: etcd_cluster
-  vars:
-    remove_etcd: false  # or 'true' to remove the database
+- hosts: all
   become: true
+  gather_facts: true  # <-- ESTE ES EL CAMBIO (de false a true)
   vars_files:
     - vars/main.yml
   tasks:
-    - name: Stop Etcd service
-      service:
-        name: etcd
-        state: stopped
-        enabled: false
-    - name: Delete Etcd content
-      file:
-        path: "{{ etcd_data_dir }}/member"
-        state: absent
-      when: remove_etcd|bool
+    - name: Include OS-specific variables for PG data dir
+      include_vars: "vars/{{ ansible_os_family }}.yml"
 
-...
+    - name: Uninstall all related packages (RedHat)
+      package:
+        name:
+          - "postgresql{{ postgresql_version }}-server"
+          - "postgresql{{ postgresql_version }}"
+          - "postgresql{{ postgresql_version }}-contrib"
+          - "timescaledb-2-postgresql-{{ postgresql_version }}"
+          - etcd
+          - patroni
+          - python3-psycopg2
+          - haproxy
+          - pgbouncer
+          - keepalived
+        state: absent
+      when: ansible_os_family == "RedHat"
+
+    - name: Uninstall all related packages (Debian)
+      apt:
+        name:
+          - "postgresql-{{ postgresql_version }}"
+          - "postgresql-contrib-{{ postgresql_version }}"
+          - "timescaledb-2-postgresql-{{ postgresql_version }}"
+          - etcd
+          - patroni
+          - python3-psycopg2
+          - haproxy
+          - pgbouncer
+          - keepalived
+        state: absent
+        purge: yes
+        autoremove: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Remove all data, config, and log directories
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ postgresql_data_dir }}"
+        - "{{ etcd_data_dir }}"
+        - "{{ consul_data_path }}"
+        - /etc/patroni
+        - /etc/etcd
+        - /etc/pgbouncer
+        - /etc/haproxy
+        - /etc/consul
+        - /etc/keepalived
+        - /var/log/postgresql
+        - /var/log/patroni
+        - /var/log/pgbouncer
+        - /var/lib/pgbackrest
+        - /etc/cron.d/pgbackrest
+        - /etc/yum.repos.d/timescale_timescaledb.repo # For RedHat
+
+    - name: Clean up systemd unit files
+      command: systemctl daemon-reload
+
+      

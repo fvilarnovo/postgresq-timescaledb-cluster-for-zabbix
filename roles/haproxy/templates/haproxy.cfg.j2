@@ -1,3 +1,4 @@
+# roles/haproxy/templates/haproxy.cfg.j2
 global
     maxconn {{ haproxy_maxconn.global }}
     log /dev/log    local0
@@ -21,38 +22,25 @@ defaults
 
 listen stats
     mode http
-    bind {{ hostvars[inventory_hostname]['inventory_hostname'] }}:{{ haproxy_listen_port.stats }}
+    bind *:{{ haproxy_listen_port.stats }}
     stats enable
     stats uri /
 
 listen master
-{% if cluster_vip is defined and cluster_vip | length > 0 %}
-    bind {{ cluster_vip }}:{{ haproxy_listen_port.master }}
-{% else %}
-    bind {{ hostvars[inventory_hostname]['inventory_hostname'] }}:{{ haproxy_listen_port.master }}
-{% endif %}
+    bind *:{{ haproxy_listen_port.master }}
     maxconn {{ haproxy_maxconn.master }}
     option tcplog
     option httpchk OPTIONS /master
     http-check expect status 200
     default-server inter 3s fastinter 1s fall 3 rise 4 on-marked-down shutdown-sessions
 {% if pgbouncer_install|bool %}
-  {% for host in groups['postgres_cluster'] %}
-server {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['inventory_hostname'] }}:{{ pgbouncer_listen_port }} check port {{ patroni_restapi_port }}
-  {% endfor %}
-{% endif %}
-{% if ( pgbouncer_install is not defined ) or ( not pgbouncer_install|bool ) %}
-  {% for host in groups['postgres_cluster'] %}
-server {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['inventory_hostname'] }}:{{ postgresql_port }} check port {{ patroni_restapi_port }}
-  {% endfor %}
+    server localhost 127.0.0.1:{{ pgbouncer_listen_port }} check port {{ patroni_restapi_port }}
+{% else %}
+    server localhost 127.0.0.1:{{ postgresql_port }} check port {{ patroni_restapi_port }}
 {% endif %}
 
 listen replicas
-{% if cluster_vip is defined and cluster_vip | length > 0 %}
-    bind {{ cluster_vip }}:{{ haproxy_listen_port.replicas }}
-{% else %}
-    bind {{ hostvars[inventory_hostname]['inventory_hostname'] }}:{{ haproxy_listen_port.replicas }}
-{% endif %}
+    bind *:{{ haproxy_listen_port.replicas }}
     maxconn {{ haproxy_maxconn.replica }}
     option tcplog
     option httpchk OPTIONS /replica
@@ -60,22 +48,13 @@ listen replicas
     http-check expect status 200
     default-server inter 3s fastinter 1s fall 3 rise 2 on-marked-down shutdown-sessions
 {% if pgbouncer_install|bool %}
-  {% for host in groups['postgres_cluster'] %}
-server {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['inventory_hostname'] }}:{{ pgbouncer_listen_port }} check port {{ patroni_restapi_port }}
-  {% endfor %}
-{% endif %}
-{% if ( pgbouncer_install is not defined ) or ( not pgbouncer_install|bool ) %}
-  {% for host in groups['postgres_cluster'] %}
-server {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['inventory_hostname'] }}:{{ postgresql_port }} check port {{ patroni_restapi_port }}
-  {% endfor %}
+    server localhost 127.0.0.1:{{ pgbouncer_listen_port }} check port {{ patroni_restapi_port }}
+{% else %}
+    server localhost 127.0.0.1:{{ postgresql_port }} check port {{ patroni_restapi_port }}
 {% endif %}
 
 listen replicas_sync
-{% if cluster_vip is defined and cluster_vip | length > 0 %}
-    bind {{ cluster_vip }}:{{ haproxy_listen_port.replicas_sync }}
-{% else %}
-    bind {{ hostvars[inventory_hostname]['inventory_hostname'] }}:{{ haproxy_listen_port.replicas_sync }}
-{% endif %}
+    bind *:{{ haproxy_listen_port.replicas_sync }}
     maxconn {{ haproxy_maxconn.replica }}
     option tcplog
     option httpchk OPTIONS /sync
@@ -83,22 +62,13 @@ listen replicas_sync
     http-check expect status 200
     default-server inter 3s fastinter 1s fall 3 rise 2 on-marked-down shutdown-sessions
 {% if pgbouncer_install|bool %}
-  {% for host in groups['postgres_cluster'] %}
-server {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['inventory_hostname'] }}:{{ pgbouncer_listen_port }} check port {{ patroni_restapi_port }}
-  {% endfor %}
-{% endif %}
-{% if ( pgbouncer_install is not defined ) or ( not pgbouncer_install|bool ) %}
-  {% for host in groups['postgres_cluster'] %}
-server {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['inventory_hostname'] }}:{{ postgresql_port }} check port {{ patroni_restapi_port }}
-  {% endfor %}
+    server localhost 127.0.0.1:{{ pgbouncer_listen_port }} check port {{ patroni_restapi_port }}
+{% else %}
+    server localhost 127.0.0.1:{{ postgresql_port }} check port {{ patroni_restapi_port }}
 {% endif %}
 
 listen replicas_async
-{% if cluster_vip is defined and cluster_vip | length > 0 %}
-    bind {{ cluster_vip }}:{{ haproxy_listen_port.replicas_async }}
-{% else %}
-    bind {{ hostvars[inventory_hostname]['inventory_hostname'] }}:{{ haproxy_listen_port.replicas_async }}
-{% endif %}
+    bind *:{{ haproxy_listen_port.replicas_async }}
     maxconn {{ haproxy_maxconn.replica }}
     option tcplog
     option httpchk OPTIONS /async
@@ -106,13 +76,8 @@ listen replicas_async
     http-check expect status 200
     default-server inter 3s fastinter 1s fall 3 rise 2 on-marked-down shutdown-sessions
 {% if pgbouncer_install|bool %}
-  {% for host in groups['postgres_cluster'] %}
-server {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['inventory_hostname'] }}:{{ pgbouncer_listen_port }} check port {{ patroni_restapi_port }}
-  {% endfor %}
-{% endif %}
-{% if ( pgbouncer_install is not defined ) or ( not pgbouncer_install|bool ) %}
-  {% for host in groups['postgres_cluster'] %}
-server {{ hostvars[host]['ansible_hostname'] }} {{ hostvars[host]['inventory_hostname'] }}:{{ postgresql_port }} check port {{ patroni_restapi_port }}
-  {% endfor %}
+    server localhost 127.0.0.1:{{ pgbouncer_listen_port }} check port {{ patroni_restapi_port }}
+{% else %}
+    server localhost 127.0.0.1:{{ postgresql_port }} check port {{ patroni_restapi_port }}
 {% endif %}
 

@@ -6,21 +6,30 @@ proxy_env: {}  # yamllint disable rule:braces
 #  https_proxy: http://10.128.64.9:3128
 # ---------------------------------------------------------------------
 
+# --- Zabbix Monitoring User Settings ---
+zabbix_user_create: true
+zabbix_username: "zabbix"
+zabbix_password: "{{ zabbix_secret_password }}" # Defined in vars/secret.yml
+
 # Cluster variables
-cluster_vip: ""  # ip address for client access to databases in the cluster (optional)
+cluster_vip: "{{ cluster_secret_vip }}"  # Defined in vars/secret.yml
 vip_interface: "{{ ansible_default_ipv4.interface }}"  # interface name (ex. "ens32")
 
 patroni_cluster_name: "postgres-cluster"  # the cluster name (must be unique for each cluster)
 patroni_install_version: "latest"  # or specific version (example 1.5.6)
 
 patroni_superuser_username: "postgres"
-patroni_superuser_password: "postgres-pass"  # please change password
+patroni_superuser_password: "{{ superuser_secret_password }}"  # Defined in vars/secret.yml
 patroni_replication_username: "replicator"
-patroni_replication_password: "replicator-pass"  # please change password
+patroni_replication_password: "{{ replication_secret_password }}"  # Defined in vars/secret.yml
 
 synchronous_mode: false  # or 'true' for enable synchronous database replication
 synchronous_mode_strict: false  # if 'true' then block all client writes to the master, when a synchronous replica is not available
 synchronous_node_count: 1  # number of synchronous standby databases
+
+# --- TimescaleDB Settings ---
+install_timescaledb: true
+timescaledb_package_name: "timescaledb-2-postgresql-{{ postgresql_version }}"
 
 # Load Balancing
 with_haproxy_load_balancing: false  # or 'true' if you want to install and configure the load-balancing
@@ -139,7 +148,8 @@ postgresql_data_checksums: true  # for bootstrap only (initdb)
 postgresql_password_encryption_algorithm: "scram-sha-256"  # or "md5" if your clients do not work with passwords encrypted with SCRAM-SHA-256
 
 # (optional) list of users to be created (if not already exists)
-postgresql_users: []
+postgresql_users:
+  - { name: "{{ zabbix_username }}", password: "{{ zabbix_password }}", flags: "NOLOGIN" }
 #  - { name: "mydb-user", password: "mydb-user-pass", flags: "SUPERUSER" }
 #  - { name: "", password: "", flags: "NOSUPERUSER" }
 #  - { name: "", password: "", flags: "NOSUPERUSER" }
@@ -157,7 +167,8 @@ postgresql_schemas: []
 #  - { schema: "myschema", db: "mydatabase", owner: "mydb-user" }
 
 # (optional) list of database extensions to be created (if not already exists)
-postgresql_extensions: []
+postgresql_extensions:
+  - { ext: "timescaledb", db: "postgres" }
 #  - { ext: "pg_stat_statements", db: "postgres" }
 #  - { ext: "pg_stat_statements", db: "mydatabase" }
 #  - { ext: "pg_stat_statements", db: "mydatabase", schema: "myschema" }
@@ -211,7 +222,7 @@ postgresql_parameters:
   - { option: "hot_standby", value: "on" }
   - { option: "wal_log_hints", value: "on" }
   - { option: "wal_compression", value: "on" }
-  - { option: "shared_preload_libraries", value: "pg_stat_statements,auto_explain" }
+  - { option: "shared_preload_libraries", value: "pg_stat_statements,auto_explain{% if install_timescaledb | default(false) %},timescaledb{% endif %}" }
   - { option: "pg_stat_statements.max", value: "10000" }
   - { option: "pg_stat_statements.track", value: "all" }
   - { option: "pg_stat_statements.track_utility", value: "false" }
@@ -247,6 +258,11 @@ postgresql_parameters:
   - { option: "max_parallel_workers", value: "8" }
   - { option: "max_parallel_workers_per_gather", value: "2" }
   - { option: "max_parallel_maintenance_workers", value: "2" }
+    # --- TCP Keepalive Settings ---
+  - { option: "tcp_keepalives_idle", value: "60" }
+  - { option: "tcp_keepalives_interval", value: "10" }
+  - { option: "tcp_keepalives_count", value: "6" }
+  - { option: "jit", value: "off" }
 #  - { option: "old_snapshot_threshold", value: "60min" }
 #  - { option: "", value: "" }
 #  - { option: "", value: "" }
@@ -486,4 +502,5 @@ netdata_conf:
   page_cache_size: 64  # Determines the amount of RAM in MiB that is dedicated to caching Netdata metric values.
   dbengine_disk_space: 1024  # Determines the amount of disk space in MiB that is dedicated to storing Netdata metric values.
 
-...
+
+

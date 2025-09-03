@@ -5,6 +5,7 @@
   gather_facts: false
   vars_files:
     - vars/main.yml
+    - vars/secret.yml
   vars:
     minimal_ansible_version: 2.7.0
   tasks:
@@ -23,6 +24,7 @@
   vars_files:
     - vars/main.yml
     - vars/system.yml
+    - vars/secret.yml
   environment: "{{ proxy_env | default({}) }}"
 
   pre_tasks:
@@ -118,6 +120,7 @@
   vars_files:
     - vars/main.yml
     - vars/system.yml
+    - vars/secret.yml
 
   pre_tasks:
     - name: Include OS-specific variables
@@ -189,6 +192,7 @@
   any_errors_fatal: true
   vars_files:
     - vars/main.yml
+    - vars/secret.yml
   pre_tasks:
     - name: Include OS-specific variables
       include_vars: "vars/{{ ansible_os_family }}.yml"
@@ -211,10 +215,11 @@
   gather_facts: true
   any_errors_fatal: true
   handlers:
-    - include: roles/pgbouncer/handlers/main.yml
+    - import_tasks: roles/pgbouncer/handlers/main.yml
   vars_files:
     - vars/main.yml
     - vars/system.yml
+    - vars/secret.yml
 
   pre_tasks:
     - name: Include OS-specific variables
@@ -273,5 +278,3 @@
 
     # finish (info)
     - role: deploy-finish
-
-...

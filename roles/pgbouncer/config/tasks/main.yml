@@ -1,3 +1,4 @@
+# roles/pgbouncer/config/tasks/main.yml
 ---
 - name: Ensure config directory "{{ pgbouncer_conf_dir }}" exist
   file:
@@ -64,12 +65,13 @@
 
 - name: Generate /etc/pgbouncer/userlist.txt
   become: true
-  become_user: postgres
   copy:
     content: |
       {{ pg_shadow_result.stdout }}
-
     dest: /etc/pgbouncer/userlist.txt
+    owner: postgres   # <-- CORRECCIÓN: Asegura que el propietario sea postgres
+    group: postgres   # <-- CORRECCIÓN: Asegura que el grupo sea postgres
+    mode: '0640'      # <-- CORRECCIÓN: Asegura los permisos correctos
   notify: "reload pgbouncer"
   when:
     - pg_shadow_result.rc == 0
@@ -77,5 +79,3 @@
     - pg_shadow_result.stdout | length > 0
     - pgbouncer_generate_userlist|bool
   tags: pgbouncer, pgbouncer_generate_userlist
-
-...

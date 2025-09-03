@@ -25,11 +25,26 @@
         validate_certs: false
       loop:
         - "{{ etcd_package_repo }}"
+      register: download_etcd_package
       environment: "{{ proxy_env | default({}) }}"
+
+# --- START DEBUG TASKS ---
+    - name: DEBUG | Inspect the download variable
+      ansible.builtin.debug:
+        var: download_etcd_package
+
+    - name: DEBUG | Check contents of /tmp directory
+      command: ls -la /tmp
+      register: tmp_contents
+
+    - name: DEBUG | Show the /tmp contents
+      ansible.builtin.debug:
+        var: tmp_contents.stdout_lines
+# --- END DEBUG TASKS ---
 
     - name: Extract "etcd" into /tmp
       unarchive:
-        src: "/tmp/{{ etcd_package_repo | basename }}"
+        src: "{{ download_etcd_package.results[0].dest }}"
         dest: /tmp/
         extra_opts:
           - --no-same-owner
