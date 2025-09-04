@@ -185,7 +185,7 @@ postgresql_extensions:
 
 # postgresql parameters to bootstrap dcs (are parameters for example)
 postgresql_parameters:
-  - { option: "max_connections", value: "500" }
+  - { option: "max_connections", value: "800" }
   - { option: "superuser_reserved_connections", value: "5" }
   - { option: "password_encryption", value: "{{ postgresql_password_encryption_algorithm }}" }
   - { option: "max_locks_per_transaction", value: "64" }  # raise this value (ex. 512) if you have queries that touch many different tables (partitioning)
@@ -309,6 +309,7 @@ pgbouncer_ignore_startup_parameters: "extra_float_digits,geqo,search_path"
 
 pgbouncer_pools:
   - { name: "postgres", dbname: "postgres", pool_parameters: "" }
+  - { name: "zabbix", dbname: "zabbix", pool_parameters: "pool_mode=transaction" }
 #  - { name: "mydatabase", dbname: "mydatabase", pool_parameters: "pool_size=20 pool_mode=transaction" }
 #  - { name: "", dbname: "", pool_parameters: "" }
 #  - { name: "", dbname: "", pool_parameters: "" }
